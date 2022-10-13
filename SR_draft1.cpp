@@ -69,7 +69,7 @@ double interpret(string data[m][r],string ind[fun_len][rp],string pop[mp][rp])
 {
     for (int i=0;i<fun_len;i++)
     {
-
+        cout << "AAAAAAA";
     }
 }
 
