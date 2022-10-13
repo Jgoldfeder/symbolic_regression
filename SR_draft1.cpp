@@ -28,7 +28,7 @@ string data[m][r];
 string file_name = "data2022_Gold.txt";
 
 const int fun_len = 100;
-const int pop_num = 10;
+const int pop_num = 1000;
 const int mp = (pop_num * fun_len);
 const int rp = 1;
 string ind[fun_len][rp]; // Array for individuals 
