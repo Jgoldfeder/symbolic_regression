@@ -264,7 +264,7 @@ def get_terminals_in_subtree(tree):
             queue.append(node.args[0]) # assume only 1 arg, since functions are sin, cos, etc
             continue
     if len(nodes)==0:
-        nodes.append()
+        nodes.append(ast.Constant(1))
     return nodes
     
 def crossover(tree1, tree2,fixed_pos=False):
