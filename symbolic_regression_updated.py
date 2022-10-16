@@ -5,7 +5,23 @@ import numpy as np
 import ast,copy
 import sys
 from sympy import *
-
+import multiprocessing
+        
+def plot(points,best_tree,count):
+    x=[]
+    y=[]
+    for p in points:
+        x.append(p[0])
+        y.append(p[1])
+    y_2 = []
+    for p in points:
+        y_2.append(evaluate_tree(best_tree,p[0]))   
+    plt.cla()     
+    plt.plot(x,y)
+    plt.plot(x,y_2)
+    #plt.show()
+    plt.savefig("img2/function"+str(count)+".png")
+    
 def read_data(dataset):
     count = 0
 
@@ -353,12 +369,10 @@ def __prune(node,max_depth=4):
         
 def simplify_tree(tree):
     exp = get_string(tree)
-    print("str",exp)
     exp = str(simplify(exp))
-    print(str(exp))
     return get_tree(exp)
     
-if True:
+if False:
     exp1 = get_random_expression(2)
     tree1 = get_tree(exp1)
     exp2 = get_random_expression(2)
@@ -399,53 +413,141 @@ if True:
     print("  Pruned:",get_string(prune(big_tree,3)))
     sys.exit(0)
     
+class Process(multiprocessing.Process):
+    def __init__(self, id,tree,points,return_dict):
+        super(Process, self).__init__()
+        self.id = id
+        self.tree=tree
+        self.points=points
+        self.return_dict = return_dict
+    def run(self):
+        points=self.points
+        tree = mutate(self.tree,points)
+        tree = gradient_update(tree,points)
+        tree = simplify_tree(tree)
+        tree.error = get_error(tree,points) 
+        self.return_dict[self.id] = tree
+
+
+def main():        
+    datasets = ["None","Gold","Silver","Bronze"]
+    points = read_data(datasets[int(sys.argv[1])])
+        
+    start = time.time()
+
+    population_size = 10
+    generations = 10
+    population = []
+
+    best_tree = None
+    best_error = 10000000
+    count = 0
+
+
+            
+          
+    for i in range(population_size):
+        exp = get_random_expression(3)
+        tree = get_tree(exp)
+        population.append(tree)
+
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()       
+    for generation in range(generations):
+        processes = []
+        for i in range(len(population)):
+            processes.append(Process(i,population[i],points,return_dict))
+        for p in processes:
+            p.start()
+            
+        for p in processes:
+            p.join()
+            print(p)            
+        print("generation:",generation)            
+        for i in range(len(population)):
+            population[i] = return_dict[i]
+            print(i,population[i].error)
+            
+            if population[i].error < best_error:
+                best_error = population[i].error
+                best_tree = population[i]
+                plot(points,best_tree,count) 
+                count +=1
+
+                
+        # sort by error        
+        population.sort(key=lambda x: x.error)
+        # keep half
+        population = population[:population_size//2]
+
+        # make children
+
+        new_pop = []
+        for i in range(population_size//2):
+            father = random.choice(population)
+            mother = random.choice(population)
+            
+            if random.choice([True,False]):
+                new_pop.append(crossover(father,mother))
+            else:
+                new_pop.append(replace_with_new(father))
+        population += new_pop
+
+
     
-datasets = ["None","Gold","Silver","Bronze"]
-points = read_data(datasets[int(sys.argv[1])])
-    
-start = time.time()
 
-population_size = 10
-population = []
+if __name__ == '__main__':
+    main()
+    sys.exit(0)
 
-best_tree = None
-best_error = 10000000
+if False:  
+    for generation in range(generations):
+        for i in range(len(population)):    
+            tree = population[i]
+            original_error = get_error(tree,points)
+            tree = mutate(tree,points)
+            tree = gradient_update(tree,points)
+            new_error = get_error(tree,points)
+            print(i,original_error,new_error, original_error-new_error,get_string(tree))
+            tree = simplify_tree(tree)
+            tree.error = new_error
+            population[i]=tree
 
-for i in range(population_size):
-    #exp = "0-1*(x+5)*(x+5)+10*x+10"
-    exp = get_random_expression(3)
-    tree = get_tree(exp)
-    original_error = get_error(tree,points)
-    tree = mutate(tree,points)
-    tree = gradient_update(tree,points)
-    new_error = get_error(tree,points)
-    print(i,original_error,new_error, original_error-new_error,get_string(tree))
-    tree.error = new_error
-    population.append(tree)
-    if new_error < best_error:
-        best_error = new_error
-        best_tree = tree
+            if new_error < best_error:
+                best_error = new_error
+                best_tree = tree
+                plot(points,best_tree,count) 
+                count +=1
+        plot(points,best_tree,count)  
+        count +=1        
+        # sort by error        
+        population.sort(key=lambda x: x.error)
+        # keep half
+        population = population[:population_size//2]
 
-# sort by error        
-population.sort(lambda x: x.error)
-# keep half
+        # make children
+
+        new_pop = []
+        for i in range(population_size//2):
+            father = random.choice(population)
+            mother = random.choice(population)
+            
+            if random.choice([True,False]):
+                new_pop.append(crossover(father,mother))
+            else:
+                new_pop.append(replace_with_new(father))
+            new_pop[-1] = prune(new_pop[-1])
+        population += new_pop
 
 
-x=[]
-y=[]
-for p in points:
-    x.append(p[0])
-    y.append(p[1])
-y_2 = []
-for p in points:
-    y_2.append(evaluate_tree(best_tree,p[0]))    
-    
-print("time elapsed:", time.time() - start,"best error:", get_error(best_tree,points), "f(x)=", get_string(best_tree))
-plt.plot(x,y)
-plt.plot(x,y_2)
-plt.show()    
-#for i in range(10):
-#    print(get_random_expression())
+
+
+
+        
+    print("time elapsed:", time.time() - start,"best error:", get_error(best_tree,points), "f(x)=", get_string(best_tree))
+    plot(points,best_tree,count)  
+    #for i in range(10):
+    #    print(get_random_expression())
 
 
 
