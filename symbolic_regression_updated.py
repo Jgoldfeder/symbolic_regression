@@ -1,10 +1,11 @@
-import random, math
+import random
 import time
 import matplotlib.pyplot as plt
 import numpy as np
 import ast,copy
 import sys
 from sympy import *
+from math import *
 import multiprocessing
         
 def plot(points,best_tree,count):
@@ -60,7 +61,7 @@ def get_error(tree,points):
     return dist/len(points)
 
 def get_random_expression(max_depth=random.randint(0,4)):
-    type = random.choices(["terminal","binary_operator","function"],weights =[0.2,0.8,0])[0]
+    type = random.choices(["terminal","binary_operator","function"],weights =[0.2,0.6,0.2])[0]
     if type == "terminal" or max_depth==0:
        return random.choice([str(random.randrange(-10, 10)),"(0+x)","(0+x*x)","(1*x)","(1*x*x)"])
     elif type == "binary_operator":
@@ -69,7 +70,7 @@ def get_random_expression(max_depth=random.randint(0,4)):
         right = get_random_expression(max_depth-1)
         return "("+ left + operator + right + ")"        
     elif type == "function":
-        f = random.choice(["math.cos","math.sin"])
+        f = random.choice(["cos","sin"])
         return f + "(" + get_random_expression(max_depth-1) + ")"
 
 types = {}
@@ -435,8 +436,8 @@ def main():
         
     start = time.time()
 
-    population_size = 10
-    generations = 10
+    population_size = 30
+    generations = 1000
     population = []
 
     best_tree = None
@@ -462,8 +463,7 @@ def main():
             
         for p in processes:
             p.join()
-            print(p)            
-        print("generation:",generation)            
+        print("generation:",generation,"total_elapsed_time:",time.time()-start)            
         for i in range(len(population)):
             population[i] = return_dict[i]
             print(i,population[i].error)
@@ -473,7 +473,7 @@ def main():
                 best_tree = population[i]
                 plot(points,best_tree,count) 
                 count +=1
-
+        print("error:",best_error," f(x)=",get_string(best_tree))
                 
         # sort by error        
         population.sort(key=lambda x: x.error)
@@ -491,6 +491,7 @@ def main():
                 new_pop.append(crossover(father,mother))
             else:
                 new_pop.append(replace_with_new(father))
+            new_pop[-1] = prune(new_pop[-1],6)
         population += new_pop
 
 
