@@ -5,6 +5,9 @@ import numpy as np
 import ast,copy
 import sys
 
+# Using the sqrt() function to calculate a square root
+from math import sqrt
+
 def read_data(dataset): #PASSES ARGUMENT GOLD, BRONZE, OR SILVER AND READS DATASET
     count = 0 
 
@@ -35,6 +38,8 @@ def evaluate_tree(tree,x): #EVALUATES TREE, EXECUTES EQUATION EXPRESSION FOR f(x
         return eval(ast.unparse(tree))
     except ZeroDivisionError: #TODO: imaginary number return 0?
         return 0
+    except ValueError:
+        return 0
         
 def get_error(tree,points): #FINDS ABSOLUTE ERROR BETWEEN TREE EXPRESSION FUNCTION AND ACTUAL RAW DATA
     dist = 0
@@ -59,11 +64,12 @@ def get_random_expression(max_depth=random.randint(0,4)): #GENERATES RANDOM FUNC
         f = random.choice(["math.cos","math.sin"]) #TODO: add "math.exp"
         return f + "(" + get_random_expression(max_depth-1) + ")"
 
+#EACH NODE OF TREE IS ONE OF THESE OPERATORS 
 types = {}
-types["binary_operator"] = "<class 'ast.BinOp'>"
-types["constant"] = "<class 'ast.Constant'>"
-types["variable"] = "<class 'ast.Name'>"
-types["function"] = "<class 'ast.Call'>"
+types["binary_operator"] = "<class 'ast.BinOp'>" #TWO CHILDREN --> Access with node.left and node.right
+types["constant"] = "<class 'ast.Constant'>" #NO CHILDREN
+types["variable"] = "<class 'ast.Name'>" #NO CHILDREN
+types["function"] = "<class 'ast.Call'>" #ONE CHILD --> Access with node.args[0]
         
 def mutate(tree,points):
     # copy for safety
@@ -75,6 +81,7 @@ def mutate(tree,points):
     variables = []
     functions = []
     
+    #DEPTH FIRST SEARCH ALGORITHM FOR TREE TRAVERSAL
     queue = [root]
     while queue:
         node = queue.pop()
@@ -116,7 +123,12 @@ def mutate(tree,points):
             
     return tree
     
+def crossover(tree):
+
     
+    return tree
+
+
 datasets = ["None","Gold","Silver","Bronze"]
 points = read_data(datasets[int(sys.argv[1])])
 
@@ -129,7 +141,6 @@ best_tree = None
 best_error = 10000000
 
 for i in range(population_size):
-    exp = "-1*x*x+10*x+10"
     exp = get_random_expression()
     tree = get_tree(exp)
     original_error = get_error(tree,points)
@@ -141,6 +152,7 @@ for i in range(population_size):
         best_error = new_error
         best_tree = tree
         
+#print(sqrt(-1))
 
 x=[]
 y=[]
